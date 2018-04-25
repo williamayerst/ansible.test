@@ -1,0 +1,31 @@
+---
+- name: SYSTEM | install prerequisites
+  package: name={{ item }} state=present
+  with_items:
+     - python-apt
+
+- name: NGINX | repo
+  apt_repository: repo='ppa:nginx/stable' update_cache=yes
+
+- name: NGINX | install
+  package: name=nginx state=present
+
+- name: NGINX | hosts
+  file: path=/etc/nginx/sites-enabled/default state=absent
+
+- name: NGINX | new hosts
+  template: src=mattermost.conf dest=/etc/nginx/conf.d/mattermost.conf
+  notify:
+    - reload nginx
+
+- name: NGINX | run and enable at boot
+  service: name=nginx state=started enabled=yes
+
+- name: SYSTEM | create mmost user
+  user: name="{{ mattermost_sysuser }}" comment="mmost"
+
+- stat: path={{ mattermost_directory }}
+  register: mattermost_install
+
+- block:
+    - name: install 
